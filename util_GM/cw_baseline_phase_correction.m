@@ -1,10 +1,16 @@
 %% General script for initial correction of cwEDMR data
 clearvars, clear, clc, close all
-folder = 'D:\Profile\qse\NREL\2021_Summer\CWEDMR\';
-filename0 = '001_1p0V_10KHz_1p2G_10K_10Scan_0Deg_Light.DTA';
-filename90 = '001_1p0V_10KHz_1p2G_10K_10Scan_90Deg_Light.DTA';
+
+folder = '/home/gianluca/matlab_util/util_GM/to_be_sorted/NREL_cwEDMR10K/';
+dataName = 'cwEDMR30K'; % Desired import-export data name
+filename0 = '001_1p0V_10KHz_3G_30K_10Scan_0Deg_Light.DTA';
+filename90 = '001_1p0V_10KHz_3G_30K_10Scan_90Deg_Light.DTA';
+
+
 [B, Spc, Params] = eprloadQuad(strjoin({folder, filename0}, ''), ...
                                strjoin({folder, filename90}, ''));
+
+% Work with column vector (1xn double)                           
 B = B';
 Spc = Spc';
 
@@ -39,13 +45,13 @@ plot(B, real(BlcPc), B, imag(BlcPc)); xlim([min(B) max(B)]);
 legend('real part', 'imaginary part');
 
 %% Save everything into a structure
-cwEDMR10K.B = B; % Corrected with calibration
-cwEDMR10K.Bl = Bl;
-cwEDMR10K.SpcBlc = Blc;
-cwEDMR10K.SpcBlcPc = real(BlcPc); % Imaginary part is almost zero everywhere
-
+cwEDMR.B = B; % Corrected with calibration
+cwEDMR.Bl = Bl;
+cwEDMR.SpcBlc = Blc;
+cwEDMR.SpcBlcPc = real(BlcPc); % Imaginary part is almost zero everywhere
 
 % If possible, average initial and final value of mwFreq
-cwEDMR10K.Exp.mwFreq = Params(1).MWFQ * 1e-09;
-cwEDMR10K.Exp.Range = [min(B) max(B)];
-save('D:\Profile\qse\NREL\2021_Summer\CWEDMR\cwEDMR10K.mat', 'cwEDMR10K') 
+cwEDMR.Exp.mwFreq = Params(1).MWFQ * 1e-09;
+cwEDMR.Exp.Range = [min(B) max(B)];
+
+save(strjoin({folder, dataName, '_BlcPc.mat'} , ''), 'cwEDMR'); 
