@@ -2,7 +2,7 @@
 clearvars, clear, clc, close all
 
 folder = '/home/gianluca/matlab_util/util_GM/to_be_sorted/NREL_cwEDMR10K/';
-dataName = 'cwEDMR30K'; % Desired import-export data name
+dataName = 'cwEDMR13K'; % Desired import-export data name
 
 % Load the baseline and phase corrected data
 load(strjoin({folder, dataName, '_BlcPc.mat'},''));
@@ -52,10 +52,10 @@ Vary2.weight = 2;
 
 %% Run fit
 if Opt.RunInitialFit || ~isfile(Opt.CacheInitialFit)
-    % [Sys, yfit] = esfit(@pepper, y, {Sys0, Sys1, Sys2}, ...
-    %     {Vary0, Vary1, Vary2}, Exp, [], Opt.Fit);
-    [Sys, yfit] = esfit(@pepper, y, {Sys1, Sys2}, ...
-        {Vary1, Vary2}, Exp, [], Opt.Fit);
+    [Sys, yfit] = esfit(@pepper, y, {Sys0, Sys1, Sys2}, ...
+        {Vary0, Vary1, Vary2}, Exp, [], Opt.Fit);
+    % [Sys, yfit] = esfit(@pepper, y, {Sys1, Sys2}, ...
+    %     {Vary1, Vary2}, Exp, [], Opt.Fit);
     save(Opt.CacheInitialFit, 'Sys', 'yfit');
 else
     load(Opt.CacheInitialFit);
@@ -74,41 +74,38 @@ if Opt.RunBootstrap || ~isfile(Opt.CacheBootstrap)
     Boot = cell(1, Opt.NumBoot);
     parfor i = 1:Opt.NumBoot
         y_ = Y(i, :);
-%         Boot{i} = esfit(@pepper, y_, {Sys0, Sys1, Sys2}, ...
-%             {Vary0, Vary1, Vary2}, Exp, [], Opt.Fit);
-        Boot{i} = esfit(@pepper, y_, {Sys1, Sys2}, ...
-            {Vary1, Vary2}, Exp, [], Opt.Fit);
+        Boot{i} = esfit(@pepper, y_, {Sys0, Sys1, Sys2}, ...
+            {Vary0, Vary1, Vary2}, Exp, [], Opt.Fit);
+%         Boot{i} = esfit(@pepper, y_, {Sys1, Sys2}, ...
+%             {Vary1, Vary2}, Exp, [], Opt.Fit);
     end
 else
     load(Opt.CacheInitialFit);
 end
 
 %% Copy all Boot Sys structure into one structure
-% % BootSys0 = Boot{1,1}{1,1};
-% % BootSys0 = rmfield(BootSys0, {'S', 'A', 'Nucs', 'weight'});
-% % BootCi0 = BootSys0;
-% % fields = fieldnames(BootSys0);
-% % 
-% % for i = 1:numel(fields)
-% %     f = fields{i};
-% %     BootSys0.(f) = repmat(BootSys0.(f), Opt.NumBoot, 1);
-% %     for j = 1:Opt.NumBoot
-% %         BootSys0.(f)(j, :) = Boot{1,j}{1,1}.(f);
-% %     end
-% %     BootCi0.(f) = bootstrapCIBca(BootSys0.(f), Sys0.(f), 0.95);
-% % end
-% % 
-% % figure(1); clf;
-% % subplot(1,3,1);
-% % histfit(BootSys0.g);
-% % subplot(1,3,2);
-% % histfit(BootSys0.lw(:,1));
-% % subplot(1,3,3);
-% % histfit(BootSys0.lw(:,2));
+BootSys0 = Boot{1,1}{1,1}; 
+BootSys0 = rmfield(BootSys0, {'S', 'A', 'Nucs', 'weight'}); 
+BootCi0 = BootSys0; 
+fields = fieldnames(BootSys0); 
+
+for i = 1:numel(fields) 
+    f = fields{i}; 
+    BootSys0.(f) = repmat(BootSys0.(f), Opt.NumBoot, 1); 
+    for j = 1:Opt.NumBoot
+        BootSys0.(f)(j, :) = Boot{1,j}{1,1}.(f); 
+    end
+    BootCi0.(f) = bootstrapCIBca(BootSys0.(f), Sys0.(f), 0.95); 
+end
+
+figure(1); 
+subplot(1,3,1); histfit(BootSys0.g);
+subplot(1,3,2); histfit(BootSys0.lw(:,1));
+subplot(1,3,3); histfit(BootSys0.lw(:,2));
 
 
-% % BootSys1 = Boot{1,1}{1,2};
-BootSys1 = Boot{1,1}{1,1};
+BootSys1 = Boot{1,1}{1,2};
+% % BootSys1 = Boot{1,1}{1,1};
 BootSys1 = rmfield(BootSys1, 'S');
 BootCi1 = BootSys1;
 fields = fieldnames(BootSys1);
@@ -117,14 +114,14 @@ for i = 1:numel(fields)
     f = fields{i};
     BootSys1.(f) = repmat(BootSys1.(f), Opt.NumBoot, 1);
     for j = 1:Opt.NumBoot
-        % % BootSys1.(f)(j, :) = Boot{1,j}{1,2}.(f);
-        BootSys1.(f)(j, :) = Boot{1,j}{1,1}.(f);        
+        BootSys1.(f)(j, :) = Boot{1,j}{1,2}.(f);
+        % % BootSys1.(f)(j, :) = Boot{1,j}{1,1}.(f);        
     end
     BootCi1.(f) = bootstrapCIBca(BootSys1.(f), Sys1.(f), 0.95);
 end
 
 % Varying g, lw only in the second component, weight
-figure(1); clf;
+figure(1);
 subplot(1,3,1);
 histfit(BootSys1.g);
 subplot(1,3,2);
@@ -133,8 +130,8 @@ subplot(1,3,3);
 histfit(BootSys1.weight);
 
 
-% % BootSys2 = Boot{1,1}{1,3};
-BootSys2 = Boot{1,1}{1,2};
+BootSys2 = Boot{1,1}{1,3};
+% % BootSys2 = Boot{1,1}{1,2};
 BootSys2 = rmfield(BootSys2, 'S');
 BootCi2 = BootSys2;
 fields = fieldnames(BootSys2);
@@ -143,8 +140,8 @@ for i = 1:numel(fields)
     f = fields{i};
     BootSys2.(f) = repmat(BootSys2.(f), Opt.NumBoot, 1);
     for j = 1:Opt.NumBoot
-        % % BootSys2.(f)(j, :) = Boot{1,j}{1,3}.(f);
-        BootSys2.(f)(j, :) = Boot{1,j}{1,2}.(f);
+        BootSys2.(f)(j, :) = Boot{1,j}{1,3}.(f);
+        % % BootSys2.(f)(j, :) = Boot{1,j}{1,2}.(f);
     end
     BootCi2.(f) = bootstrapCIBca(BootSys2.(f), Sys2.(f), 0.95);
 end
@@ -158,6 +155,6 @@ histfit(BootSys2.lw(:,1));
 subplot(1,3,3);
 histfit(BootSys2.weight);
 
-% % save(Opt.CacheBootstrap, 'BootSys0', 'BootCi0', ...
-% %     'BootSys1', 'BootCi1', 'BootSys2', 'BootCi2')
-save(Opt.CacheBootstrap, 'BootSys1', 'BootCi1', 'BootSys2', 'BootCi2')
+save(Opt.CacheBootstrap, 'BootSys0', 'BootCi0', ...
+    'BootSys1', 'BootCi1', 'BootSys2', 'BootCi2')
+% % save(Opt.CacheBootstrap, 'BootSys1', 'BootCi1', 'BootSys2', 'BootCi2')

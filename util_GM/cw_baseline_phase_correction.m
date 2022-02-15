@@ -2,9 +2,9 @@
 clearvars, clear, clc, close all
 
 folder = '/home/gianluca/matlab_util/util_GM/to_be_sorted/NREL_cwEDMR10K/';
-dataName = 'cwEDMR30K'; % Desired import-export data name
-filename0 = '001_1p0V_10KHz_3G_30K_10Scan_0Deg_Light.DTA';
-filename90 = '001_1p0V_10KHz_3G_30K_10Scan_90Deg_Light.DTA';
+dataName = 'cwEDMR13K'; % Desired import-export data name
+filename0 = '011_1p0V_10KHz_1p2G_13K_10Scan_0Deg_Light.DTA';
+filename90 = '011_1p0V_10KHz_1p2G_13K_10Scan_90Deg_Light.DTA';
 
 
 [B, Spc, Params] = eprloadQuad(strjoin({folder, filename0}, ''), ...
