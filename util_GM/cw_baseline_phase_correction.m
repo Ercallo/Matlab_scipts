@@ -23,6 +23,7 @@ Opt.Run.ManualPc = false;
 
 % Import
 [B, Spc, Params] = eprloadQuad(Opt.File.Load.Path0, Opt.File.Load.Path90);
+
 B = B';
 Spc = Spc';
 
@@ -95,3 +96,4 @@ Data.Exp.mwFreq = Params(1).MWFQ * 1e-09;
 Data.Exp.Range = [min(B) max(B)];
 
 save(Opt.File.Save.Path, '-struct', 'Data') 
+
