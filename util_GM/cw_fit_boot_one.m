@@ -3,7 +3,7 @@ clearvars, clear, clc, close all
 addpath(genpath('/home/gianluca/matlab_util'));
 
 % File and Run options
-Opt.File.Name = 'cw40K';
+Opt.File.Name = 'cw20K';
 Opt.File.Load.Folder = ...
     '/home/gianluca/matlab_util/util_GM/cwEDMR_summer';
 Opt.File.Load.Name = strjoin({Opt.File.Name, 'BlcPc'}, '_');
@@ -11,10 +11,10 @@ Opt.File.Load.Path = strjoin({Opt.File.Load.Folder, ...
     Opt.File.Load.Name}, '/');
 
 Opt.File.Save.Folder = Opt.File.Load.Folder;
-Opt.File.Save.FitName = strjoin({Opt.File.Load.Name, 'fit', 'one'}, '_');
+Opt.File.Save.FitName = strjoin({Opt.File.Name, 'fit', 'one'}, '_');
 Opt.File.Save.FitPath = strjoin({Opt.File.Save.Folder, ...
     Opt.File.Save.FitName}, '/');
-Opt.File.Save.BootName = strjoin({Opt.File.Load.Name, 'boot', 'one'}, '_');
+Opt.File.Save.BootName = strjoin({Opt.File.Name, 'boot', 'one'}, '_');
 Opt.File.Save.BootPath = strjoin({Opt.File.Save.Folder, ...
     Opt.File.Save.BootName}, '/');
 
@@ -38,7 +38,8 @@ Opt.Fit.Scaling = 'lsq'; % no baseline
 Opt.Fit.PrintLevel = 0;
 
 %% Initial fit
-if Opt.Run.InitialFit || ~isfile(strjoin({Opt.File.Save.FitPath, 'mat'}, '.'))
+if Opt.Run.InitialFit || ...
+        ~isfile(strjoin({Opt.File.Save.FitPath, 'mat'}, '.'))
     [Sys, yfit] = esfit(@pepper, y, Sys0, Vary0, Exp, [], Opt.Fit);
     save(Opt.File.Save.FitPath, 'Sys', 'yfit', 'Sys0', 'Vary0');
 else
@@ -52,7 +53,8 @@ if Opt.SaveFig
 end
 
 %% Bootstrap
-if Opt.Run.Bootstrap || ~isfile(strjoin({Opt.File.Save.BootPath, 'mat'}, '.'))
+if Opt.Run.Bootstrap || ...
+        ~isfile(strjoin({Opt.File.Save.BootPath, 'mat'}, '.'))
     r = y - yfit;
     [~, idx] = bootstrp(Opt.nBoot, [], r);
     R = r(idx);
