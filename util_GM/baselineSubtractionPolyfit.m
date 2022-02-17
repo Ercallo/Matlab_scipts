@@ -2,7 +2,7 @@ function [y, b] = baselineSubtractionPolyfit(x, y, varargin)
 % Baseline correction with a polynomial function.
 % @param (1xN) double x
 % @param (1xN) double y
-% @param varargin: Opt (Opt.Order, Opt.Range, Opt.Range)
+% @param varargin: Opt (Opt.Order, Opt.Range, Opt.Range1)
 % @return y: baseline corrected signal
 % @return b: baseline
 Opt = parseOptions(varargin{:});
