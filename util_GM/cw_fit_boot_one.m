@@ -1,26 +1,27 @@
 %% General script for initial correction of cwEDMR data
 clearvars, clear, clc, close all
-addpath(genpath('D:\Profile\qse\matlab_util'));
+addpath(genpath('/home/gianluca/matlab_util'));
 
 % File and Run options
 Opt.File.Name = 'cw40K';
 Opt.File.Load.Folder = ...
-    'D:\Profile\qse\NREL\2021_Summer\CWEDMR\data_analysis';
+    '/home/gianluca/matlab_util/util_GM/cwEDMR_summer';
 Opt.File.Load.Name = strjoin({Opt.File.Name, 'BlcPc'}, '_');
 Opt.File.Load.Path = strjoin({Opt.File.Load.Folder, ...
-    Opt.File.Load.Name}, '\');
+    Opt.File.Load.Name}, '/');
 
 Opt.File.Save.Folder = Opt.File.Load.Folder;
-Opt.File.Save.FitName = strjoin({Opt.File.Load.Name, 'fit'}, '_');
+Opt.File.Save.FitName = strjoin({Opt.File.Load.Name, 'fit', 'one'}, '_');
 Opt.File.Save.FitPath = strjoin({Opt.File.Save.Folder, ...
-    Opt.File.Save.FitName}, '\');
-Opt.File.Save.BootName = strjoin({Opt.File.Load.Name, 'boot'}, '_');
-Opt.File.Save.FitPath = strjoin({Opt.File.Save.Folder, ...
-    Opt.File.Save.BootName}, '\');
+    Opt.File.Save.FitName}, '/');
+Opt.File.Save.BootName = strjoin({Opt.File.Load.Name, 'boot', 'one'}, '_');
+Opt.File.Save.BootPath = strjoin({Opt.File.Save.Folder, ...
+    Opt.File.Save.BootName}, '/');
 
-Opt.Run.InitialFit = true;
-Opt.Run.Bootstrap = true;
-Opt.nBoot = 100;
+Opt.Run.InitialFit = false;
+Opt.Run.Bootstrap = false;
+Opt.SaveFig = true;
+Opt.nBoot = 5000;
 
 % Import
 load(Opt.File.Load.Path)
@@ -37,15 +38,21 @@ Opt.Fit.Scaling = 'lsq'; % no baseline
 Opt.Fit.PrintLevel = 0;
 
 %% Initial fit
-if Opt.Run.InitialFit || ~isfile(Opt.File.Save.FitPath)
+if Opt.Run.InitialFit || ~isfile(strjoin({Opt.File.Save.FitPath, 'mat'}, '.'))
     [Sys, yfit] = esfit(@pepper, y, Sys0, Vary0, Exp, [], Opt.Fit);
     save(Opt.File.Save.FitPath, 'Sys', 'yfit', 'Sys0', 'Vary0');
 else
     load(Opt.File.Save.FitPath);
 end
 
+FigFit = figure();
+plot(x, y, x, yfit); xlim(Exp.Range);
+if Opt.SaveFig
+    saveas(FigFit, Opt.File.Save.FitPath, 'png')
+end
+
 %% Bootstrap
-if Opt.Run.Bootstrap || ~isfile(Opt.File.Save.BootPath)
+if Opt.Run.Bootstrap || ~isfile(strjoin({Opt.File.Save.BootPath, 'mat'}, '.'))
     r = y - yfit;
     [~, idx] = bootstrp(Opt.nBoot, [], r);
     R = r(idx);
@@ -55,7 +62,7 @@ if Opt.Run.Bootstrap || ~isfile(Opt.File.Save.BootPath)
     Boot = cell(1, Opt.nBoot);
     parfor i = 1:Opt.nBoot
         y_ = Y(i, :);
-        Boot{i} = esfit(@pepper, y_, Sys0, Vary, Exp, [], FitOpt);
+        Boot{i} = esfit(@pepper, y_, Sys0, Vary0, Exp, [], FitOpt);
     end
     save(Opt.File.Save.BootPath, 'Boot');
 else
@@ -63,21 +70,24 @@ else
 end
 
 %% Copy all Boot Sys structure into one structure
-BootSys = Boot{1};
-fields = fieldnames(BootSys);
+BootSys0 = Boot{1};
+fields = fieldnames(BootSys0);
 
 for i = 1:numel(fields)
     f = fields{i};
-    BootSys.(f) = repmat(BootSys.(f), Opt.nBoot, 1);
+    BootSys0.(f) = repmat(BootSys0.(f), Opt.nBoot, 1);
     for j = 1:Opt.nBoot
-        BootSys.(f)(j, :) = Boot{j}.(f);
+        BootSys0.(f)(j, :) = Boot{j}.(f);
     end
 end
 
-figure();
+FigBoot = figure();
 subplot(1, 2, 1);
-histfit(BootSys.g);
+histfit(BootSys0.g);
 subplot(1, 2, 2);
-histfit(BootSys.lw(:, 2));
+histfit(BootSys0.lw(:, 2));
+if Opt.SaveFig
+    saveas(FigBoot, Opt.File.Save.BootPath, 'png')
+end
 
 save(Opt.File.Save.BootPath, 'Boot', 'BootSys0', 'Sys0', 'Vary0');
