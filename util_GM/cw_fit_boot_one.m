@@ -3,9 +3,9 @@ clearvars, clear, clc, close all
 addpath(genpath('/home/gianluca/matlab_util'));
 
 % File and Run options
-Opt.File.Name = 'cw20K';
+Opt.File.Name = 'cw40K';
 Opt.File.Load.Folder = ...
-    '/home/gianluca/matlab_util/util_GM/cwEDMR_summer';
+    '/home/gianluca/matlab_util/util_GM/cwEDMR_summer_1ordBl';
 Opt.File.Load.Name = strjoin({Opt.File.Name, 'BlcPc'}, '_');
 Opt.File.Load.Path = strjoin({Opt.File.Load.Folder, ...
     Opt.File.Load.Name}, '/');
@@ -18,9 +18,9 @@ Opt.File.Save.BootName = strjoin({Opt.File.Name, 'boot', 'one'}, '_');
 Opt.File.Save.BootPath = strjoin({Opt.File.Save.Folder, ...
     Opt.File.Save.BootName}, '/');
 
-Opt.Run.InitialFit = false;
-Opt.Run.Bootstrap = false;
-Opt.SaveFig = true;
+Opt.Run.InitialFit = true;
+Opt.Run.Bootstrap = true;
+Opt.SaveFig = false;
 Opt.nBoot = 5000;
 
 % Import
