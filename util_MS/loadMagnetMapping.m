@@ -4,17 +4,41 @@ function [Data,Params] = loadMagnetMapping(file)
 fileID = fopen(file);
 f = textscan(fileID,'%s','delimiter','\n');
 fclose(fileID);
-
-nLine = 980;
-nPos = 286;
-
 f = f{1};
-Params = f(6:27);
-f(6:27) = [];
 
+% Lines of global parameters
+globalParams = 6:30;
+Params = f(globalParams);
+
+% Remove lines to make txt the same for every position
+f(globalParams) = [];
+
+nStepX = strsplit(Params(end-2), ' ');
+nStepX = str2double(nStepX(end));
+nStepY = strsplit(Params(end-1), ' ');
+nStepY = str2double(nStepY(end));
+nStepZ = strsplit(Params(end), ' ');
+nStepZ = str2double(nStepZ(end));
+nPos = nStepX*nStepY*nStepZ;
+
+% Number of commented lines between one position and another
+nPosParams = 12;
+
+fStart = strsplit(Params(3), ' ');
+fStart = str2double(fStart(end));
+fStep = strsplit(Params(4), ' ');
+fStep = str2double(fStep(end));
+fStop = strsplit(Params(5), ' ');
+fStop = str2double(fStop(end));
+nf = (fStop - fStart)/fStep
+
+% Total number of lines for one position
+nLine = nf+nPosParams;
+
+% Import first position for initialization
 Pos_ = f(6:8);
 Pos_ = split(Pos_);
-Data_ = f(13:980);
+Data_ = f(nPosParams+1:nLine);
 Data_ = split(Data_);
 
 Data.xPos = str2double(Pos_{1,2});
@@ -30,7 +54,7 @@ Data = repmat(Data, 1, nPos);
 for i = 1:nPos
     Pos_ = f(6+nLine*(i-1):8+nLine*(i-1));
     Pos_ = split(Pos_);
-    Data_ = f(13+nLine*(i-1):980+nLine*(i-1));
+    Data_ = f(nPosParams+1+nLine*(i-1):nLine*i);
     Data_ = split(Data_);
     
     Data(i).xPos = str2double(Pos_{1,2});
@@ -42,4 +66,3 @@ for i = 1:nPos
     Data(i).Ch3 = str2double(Data_(:,4));
     Data(i).Ch4 = str2double(Data_(:,5));
 end
-
