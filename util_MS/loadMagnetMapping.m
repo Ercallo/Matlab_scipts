@@ -10,35 +10,35 @@ f = f{1};
 globalParams = 6:30;
 Params = f(globalParams);
 
-% Remove lines to make txt the same for every position
+% Remove lines to have the same comments for every position
 f(globalParams) = [];
 
-nStepX = strsplit(Params(end-2), ' ');
+nStepX = strsplit(string(Params(end-2)), ' ');
 nStepX = str2double(nStepX(end));
-nStepY = strsplit(Params(end-1), ' ');
+nStepY = strsplit(string(Params(end-1)), ' ');
 nStepY = str2double(nStepY(end));
-nStepZ = strsplit(Params(end), ' ');
+nStepZ = strsplit(string(Params(end)), ' ');
 nStepZ = str2double(nStepZ(end));
 nPos = nStepX*nStepY*nStepZ;
 
-% Number of commented lines between one position and another
-nPosParams = 12;
+% Line of first data point
+nFirstData = 13;
 
-fStart = strsplit(Params(3), ' ');
+fStart = strsplit(string(Params(3)), ' ');
 fStart = str2double(fStart(end));
-fStep = strsplit(Params(4), ' ');
+fStep = strsplit(string(Params(4)), ' ');
 fStep = str2double(fStep(end));
-fStop = strsplit(Params(5), ' ');
+fStop = strsplit(string(Params(5)), ' ');
 fStop = str2double(fStop(end));
-nf = (fStop - fStart)/fStep
+nf = (fStop - fStart)/fStep;
 
 % Total number of lines for one position
-nLine = nf+nPosParams;
+nLine = nf+nFirstData;
 
 % Import first position for initialization
 Pos_ = f(6:8);
 Pos_ = split(Pos_);
-Data_ = f(nPosParams+1:nLine);
+Data_ = f(nFirstData:nLine);
 Data_ = split(Data_);
 
 Data.xPos = str2double(Pos_{1,2});
@@ -54,7 +54,7 @@ Data = repmat(Data, 1, nPos);
 for i = 1:nPos
     Pos_ = f(6+nLine*(i-1):8+nLine*(i-1));
     Pos_ = split(Pos_);
-    Data_ = f(nPosParams+1+nLine*(i-1):nLine*i);
+    Data_ = f(nFirstData+nLine*(i-1):nLine*i);
     Data_ = split(Data_);
     
     Data(i).xPos = str2double(Pos_{1,2});

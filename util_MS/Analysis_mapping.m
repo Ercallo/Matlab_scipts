@@ -1,69 +1,81 @@
-clearvars;
-clc;
-clear;
-clf;
+%% General script for initial correction of cwEDMR data
+clearvars, clear, clc, close all
+addpath(genpath('D:\Profile\qse\matlab_util'));
 
-fileID = fopen('001_mapping.txt');
+% File and Run options
+Opt.Load.Folder = ...
+    'D:\Profile\qse\eproc_magnet_mapping';
+Opt.Load.Name = 'test_003.txt';
+Opt.Load.Path = strjoin({Opt.Load.Folder, ...
+    Opt.Load.Name}, '\');
 
-data = textscan(fileID,'%s','delimiter','\n');
+%% Import
+[Data,Params] = loadMagnetMapping(Opt.File.Load.Path0);
+   
+%% Import
+file = Opt.Load.Path;
+fileID = fopen(file);
+f = textscan(fileID,'%s','delimiter','\n');
+fclose(fileID);
+f = f{1};
 
-a = data{1};
+% Lines of global parameters
+globalParams = 6:30;
+Params = f(globalParams);
 
-a(6:27) = [];
+% Remove lines to make txt the same for every position
+f(globalParams) = [];
 
-nLine = 980;
-nPosition = 286;
+nStepX = strsplit(string(Params(end-2)), ' ');
+nStepX = str2double(nStepX(end));
+nStepY = strsplit(string(Params(end-1)), ' ');
+nStepY = str2double(nStepY(end));
+nStepZ = strsplit(string(Params(end)), ' ');
+nStepZ = str2double(nStepZ(end));
+nPos = nStepX*nStepY*nStepZ;
 
-%%
+% Line of first data point
+nFirstData = 13;
 
-position = a(6:8);
-dati = a(13:980);
-dati = split(dati);
-position = split(position);
+fStart = strsplit(string(Params(3)), ' ');
+fStart = str2double(fStart(end));
+fStep = strsplit(string(Params(4)), ' ');
+fStep = str2double(fStep(end));
+fStop = strsplit(string(Params(5)), ' ');
+fStop = str2double(fStop(end));
+nf = (fStop - fStart)/fStep;
 
-File.xPosition = str2double(position{1,2});
-File.yPosition = str2double(position{2,2});
-File.zPosition = str2double(position{3,2});
-File.Freq = dati(:,1);
-File.Ch1 = dati(:,2);
-File.Ch2 = dati(:,3);
-File.Ch3 = dati(:,4);
-File.Ch4 = dati(:,5);
+% Total number of lines for one position
+nLine = nf+nFirstData
 
-%% ciclo for
+% Import first position for initialization
+Pos_ = f(6:8);
+Pos_ = split(Pos_);
+Data_ = f(nFirstData:nLine);
+Data_ = split(Data_);
 
-File = repmat(File, 1, nPosition);
+Data.xPos = str2double(Pos_{1,2});
+Data.yPos = str2double(Pos_{2,2});
+Data.zPos = str2double(Pos_{3,2});
+Data.f = Data_(:,1);
+Data.Ch1 = Data_(:,2);
+Data.Ch2 = Data_(:,3);
+Data.Ch3 = Data_(:,4);
+Data.Ch4 = Data_(:,5);
 
-%%
-
-for i = 1:nPosition
+Data = repmat(Data, 1, nPos);
+for i = 1:nPos
+    Pos_ = f(6+nLine*(i-1):8+nLine*(i-1));
+    Pos_ = split(Pos_);
+    Data_ = f(nFirstData+nLine*(i-1):nLine*i);
+    Data_ = split(Data_);
     
-    position = a(6+nLine*(i-1):8+nLine*(i-1));
-    position = split(position);
-    dati = a(13+nLine*(i-1):980+nLine*(i-1));
-    dati = split(dati);
-    
-    File(i).xPosition = str2double(position{1,2});
-    File(i).yPosition = str2double(position{2,2});
-    File(i).zPosition = str2double(position{3,2});
-    File(i).Freq = str2double(dati(:,1));
-    File(i).Ch1 = str2double(dati(:,2));
-    File(i).Ch2 = str2double(dati(:,3));
-    File(i).Ch3 = str2double(dati(:,4));
-    File(i).Ch4 = str2double(dati(:,5));
-        
+    Data(i).xPos = str2double(Pos_{1,2});
+    Data(i).yPos = str2double(Pos_{2,2});
+    Data(i).zPos = str2double(Pos_{3,2});
+    Data(i).f = str2double(Data_(:,1));
+    Data(i).Ch1 = str2double(Data_(:,2));
+    Data(i).Ch2 = str2double(Data_(:,3));
+    Data(i).Ch3 = str2double(Data_(:,4));
+    Data(i).Ch4 = str2double(Data_(:,5));
 end
-
-%% figure
-M = 137;
-
-for i = 1+M : 5+M
-    figure(i)
-    
-    plot(File(i).Freq,File(i).Ch1)
-    
-    
-end
-
-    
-    

@@ -1,4 +1,4 @@
-%% General script for initial correction of cwEDMR data
+%% General script for initial comparison of cwEDMR data
 clearvars, clear, clc, close all
 addpath(genpath('D:\Profile\qse\matlab_util'));
 
