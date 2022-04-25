@@ -3,34 +3,30 @@ clearvars, clear, clc, close all
 addpath(genpath('D:\Profile\qse\matlab_util'));
 
 % File and Run options
-Opt.Load.Name = '007_30dB.DTA';
-Opt.Save.Name = '30dB';
+% Opt.Load.Name0 = '013_1p0V_10KHz_3G_25K_10Scan_0Deg_Light.DTA';
+% Opt.Load.Name90 = '013_1p0V_10KHz_3G_25K_10Scan_90Deg_Light.DTA';
+Opt.Load.Name = 'b21_60db.DTA';
+Opt.Save.Name = 'BDPA_60db';
 
-Opt.Load.Folder = 'D:\Profile\qse\NREL\2022_march\220331';
+Opt.Load.Folder = 'D:\Profile\qse\BDPA\220414';
+% Opt.Load.Path0 = strjoin({Opt.Load.Folder, Opt.Load.Name0}, '\');
+% Opt.Load.Path90 = strjoin({Opt.Load.Folder, Opt.Load.Name90}, '\');
 Opt.Load.Path = strjoin({Opt.Load.Folder, Opt.Load.Name}, '\');
 
 Opt.Save.Folder = strjoin({Opt.Load.Folder, 'data_analysis'}, '\');
-Opt.Save.Name0 = strjoin({Opt.Save.Name, 'p0_baseline'}, '_'); % .png
-Opt.Save.Path0 = strjoin({Opt.Save.Folder, Opt.Save.Name0}, '\');
-Opt.Save.Name1 = strjoin({Opt.Save.Name, 'p1_phase'}, '_');
-Opt.Save.Path1 = strjoin({Opt.Save.Folder, Opt.Save.Name1}, '\');
-Opt.Save.Name2 = strjoin({Opt.Save.Name, 'p2_phase_2chs'}, '_');
-Opt.Save.Path2 = strjoin({Opt.Save.Folder, Opt.Save.Name2}, '\');
-Opt.Save.NameMat = strjoin({Opt.Save.Name, 'BlcPc'}, '_'); % .mat
-Opt.Save.PathMat = strjoin({Opt.Save.Folder, Opt.Save.NameMat}, '\');
 
-Opt.Run.Blc = false;
-Opt.Run.Pc = false;
+Opt.Run.Blc = true;
+Opt.Run.Pc = true;
 Opt.Run.ManualPc = false;
 Opt.Run.SaveFig = true;
 
 % Import
+% [B, Spc, Params] = eprloadQuad(Opt.Load.Path0, Opt.Load.Path90);
 [B, Spc, Params] = eprload(Opt.Load.Path);
-% DcCurrent = 230;
+
 B = B';
 Spc = Spc{1, 1} + 1i*Spc{1, 2};
 Spc = Spc';
-B = B(15:end); Spc = Spc(15:end);
 
 % Field offset
 Boffset = 5.181;
@@ -45,38 +41,43 @@ if Opt.Run.Blc || ~isfile(strjoin({Opt.Save.PathMat, 'mat'}, '.'))
     [Blc, Bl] = baselineSubtractionPolyfit(B, Spc, Opt.Bc);
 else
     BlcPcLoad = load(Opt.Save.PathMat, 'BlcPc');
+    Spc = BlcPcLoad.BlcPc.Spc;
     Blc = BlcPcLoad.BlcPc.SpcBlc; Bl = BlcPcLoad.BlcPc.Bl;
 end
 
 figure()
 t = tiledlayout('flow', 'TileSpacing', 'compact', 'Padding', 'compact');
-nexttile, plot(B, real(Spc), B, real(Bl));
+nexttile, plot(B, real(Spc), 'k', B, real(Bl));
 xline(B(Opt.Bc.Range(2))); xline(B(Opt.Bc.Range1(1))); 
 xlim([min(B) max(B)]);
 legend('raw data 0°', 'baseline');
-nexttile, plot(B, imag(Spc), B, imag(Bl));
+nexttile, plot(B, imag(Spc), 'k', B, imag(Bl));
 xline(B(Opt.Bc.Range(2))); xline(B(Opt.Bc.Range1(1))); 
 xlim([min(B) max(B)]); 
 legend('raw data 90°', 'baseline');
-nexttile, plot(B, real(Blc)); xlim([min(B) max(B)]);
+nexttile, plot(B, real(Blc), 'k'); xlim([min(B) max(B)]);
 legend('Blc data 0°');
-nexttile, plot(B, imag(Blc)); xlim([min(B) max(B)]);
+nexttile, plot(B, imag(Blc), 'k'); xlim([min(B) max(B)]);
 legend('Blc data 90°');
-xlabel(t, 'B0 [mT]', 'Fontsize', 16);
+xlabel(t, 'Magnetic field [mT]', 'Fontsize', 16);
 ylabel(t, 'Signal [V]', 'Fontsize', 16);
+
 if Opt.Run.SaveFig
-    saveas(t, Opt.Save.Path0, 'png')
+    Opt.Save.FigName = strjoin({Opt.Save.Name, 'f0_baseline'}, '_'); % .png
+    Opt.Save.FigPath = strjoin({Opt.Save.Folder, Opt.Save.FigName}, '\');
+    saveas(t, Opt.Save.FigPath, 'png')
 end
 
 %% Manual phase correction
 if Opt.Run.ManualPc
     model = @(p) Blc * exp(1i*p*pi/180);
     PcArray = zeros(numel(B), 181); % Array of phase corrected data
-    for i=0:180
-        PcArray(:,i+1) = model(i*1);
+    for i = -90:90
+        PcArray(:,90 + i + 1) = model(i*1);
     end
     figure()
-    h1 = ScrollableAxes('Index', 90 + 67);
+    p0 = 0; % Phase at which the scrollable starts
+    h1 = ScrollableAxes('Index', 91 + p0); 
     plot(h1, B', -90:90, real(PcArray));
     hold on
     plot(h1, B', -90:90, imag(PcArray));
@@ -84,27 +85,31 @@ end
 
 %% Phase correction
 if Opt.Run.Pc || ~isfile(strjoin({Opt.Save.PathMat, 'mat'}, '.'))
-    [BlcPc, Phase] = correctPhaseMaxima(Blc, 45); % Baseline and phase corrected 
+    % Baseline and phase corrected (BlcPc) spectrum
+    [BlcPc, Phase] = correctPhaseMaxima(Blc, 0);
 else
     BlcPcLoad = load(Opt.Save.PathMat, 'BlcPc');
     BlcPc = BlcPcLoad.BlcPc.SpcBlcPc; Phase = BlcPcLoad.BlcPc.Phase;
 end
 
 f = figure();
-plot(B, imag(BlcPc)); xlim([min(B) max(B)]);
-xlabel('B0 [mT]', 'Fontsize', 16); ylabel('Signal [V]', 'Fontsize', 16);
+plot(B, real(BlcPc), 'k', B, imag(BlcPc)); xlim([min(B) max(B)]);
+xlabel('Magnetic field [mT]', 'Fontsize', 16); ylabel('Signal [V]', 'Fontsize', 16);
+legend('channel 1', 'channel 2');
 if Opt.Run.SaveFig
-    saveas(f, Opt.Save.Path1, 'png');
+    Opt.Save.FigName = strjoin({Opt.Save.Name, 'f1_phase_2chs'}, '_');
+    Opt.Save.FigPath = strjoin({Opt.Save.Folder, Opt.Save.FigName}, '\');
+    saveas(f, Opt.Save.FigPath, 'png');
 end
 
 f = figure();
-plot(B, imag(BlcPc), B, real(BlcPc)); xlim([min(B) max(B)]);
-xlabel('B0 [mT]', 'Fontsize', 16); ylabel('Signal [V]', 'Fontsize', 16);
-legend('channel 1', 'channel 2');
+plot(B, real(BlcPc), 'k'); xlim([min(B) max(B)]);
+xlabel('Magnetic field [mT]', 'Fontsize', 16); ylabel('Signal [V]', 'Fontsize', 16);
 if Opt.Run.SaveFig
-    saveas(f, Opt.Save.Path2, 'png')
+    Opt.Save.FigName = strjoin({Opt.Save.Name, 'f2_final'}, '_'); % .png
+    Opt.Save.FigPath = strjoin({Opt.Save.Folder, Opt.Save.FigName}, '\');
+    saveas(f, Opt.Save.FigPath, 'png');
 end
-
 
 %% Save everything into a structure
 Data.x = B; % Corrected with calibration
@@ -113,10 +118,12 @@ Data.BlcPc.Bl = Bl;
 Data.BlcPc.SpcBlc = Blc;
 Data.BlcPc.SpcBlcPc = BlcPc;
 Data.BlcPc.Phase = Phase;
-Data.y = imag(BlcPc); % Imaginary part is almost zero everywhere
+Data.y = real(BlcPc); % Imaginary part is almost zero everywhere
 
 % If possible, average initial and final value of mwFreq
 Data.Exp.mwFreq = Params(1).MWFQ * 1e-09; % GHz
 Data.Exp.Range = [min(B) max(B)];
 
-save(Opt.Save.PathMat, '-struct', 'Data') 
+Opt.Save.MatName = strjoin({Opt.Save.Name, 'BlcPc'}, '_'); % .mat
+Opt.Save.MatPath = strjoin({Opt.Save.Folder, Opt.Save.MatName}, '\');
+save(Opt.Save.MatPath, '-struct', 'Data') 
