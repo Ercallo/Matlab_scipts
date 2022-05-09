@@ -3,20 +3,13 @@ clearvars, clear, clc, close all
 addpath(genpath('/home/gianluca/matlab_util'));
 
 % File and Run options
-Opt.Name = 'cw20K';
-Opt.Load.Folder = ...
-    'D:\Profile\qse\NREL\2021_summer\CWEDMR\data_analysis';
-Opt.Load.Name = strjoin({Opt.Name, 'BlcPc'}, '_');
-Opt.Load.Path = strjoin({Opt.Load.Folder, ...
-    Opt.Load.Name}, '/');
+Opt.LName = 'cw9K';
+Opt.LFolder = 'D:\Profile\qse\NREL\2021_summer\CWEDMR\data_analysis';
+Opt.LPath = [Opt.LFolder, '\', Opt.LName, '_BlcPc.mat'];
 
-Opt.Save.Folder = Opt.Load.Folder;
-Opt.Save.FitName = strjoin({Opt.Name, 'fit', 'two'}, '_');
-Opt.Save.FitPath = strjoin({Opt.Save.Folder, ...
-    Opt.Save.FitName}, '/');
-Opt.Save.BootName = strjoin({Opt.Name, 'boot', 'two'}, '_');
-Opt.Save.BootPath = strjoin({Opt.Save.Folder, ...
-    Opt.Save.BootName}, '/');
+Opt.SFolder = [Opt.LFolder, '\', 'fit_boot'];
+Opt.SFitPath = [Opt.SFolder, '\', Opt.LName, '_fit_three.mat'];
+Opt.SBootPath = [Opt.SFolder, '\' Opt.LName, '_boot_three.mat'];
 
 Opt.Run.ManualInitialFit = true;
 Opt.Run.InitialFit = true;
@@ -25,51 +18,64 @@ Opt.SaveFig = false;
 Opt.nBoot = 5000;
 
 % Import
-load(Opt.Load.Path)
+load(Opt.LPath)
 
 %% Initial parameters, ranges and fit options
-Sys0 = struct('g', 2.008, ...
-    'lw', [0 5]); % mT [Gaussian Lorentzian)
+Sys0 = struct('g', 2.009, ...
+    'lw', [0 3.6]); % mT [Gaussian Lorentzian)
 
-Vary0 = struct('g', 0.01, ...
-    'lw', Sys0.lw);
+Vary0 = struct('g', 0.003, ...
+    'lw', 0.5*Sys0.lw);
 
-Sys1 = struct('g', 2.005, ...
+Sys1 = struct('g', 2.0061, ...
     'lw', [0 2], ...
     'weight', 2);
 
-Vary1 = struct('g', 0.01, ...
+Vary1 = struct('g', 0.003, ...
     'lw', Sys1.lw, ...
     'weight', Sys1.weight);
 
-Opt.Fit = struct('Method', 'simplex fcn', ... % Nelder/Mead, data as is
+Opt.Fit = struct('Method', 'simplex diff', ...
     'Scaling', 'lsq', ... % No baseline
+    'TolFun', 1e-3, ... % Termination criterion
     'PrintLevel', 0);
+
+SysInit = {Sys0, Sys1}; VaryInit = {Vary0, Vary1};
+
 
 %% Manual initial fit
 if Opt.Run.ManualInitialFit
-    esfit(@pepper, y, {Sys0, Sys1}, ...
-        {Vary0, Vary1}, Exp, [], Opt.Fit);
+    esfit(@pepper, y, SysInit, VaryInit, Exp, [], Opt.Fit);
 end
 
-%% Initial fit
-if Opt.Run.InitialFit || ...
-        ~isfile(strjoin({Opt.Save.FitPath, 'mat'}, '.'))
-    [Sys, yfit] = esfit(@pepper, y, Sys0, Vary0, Exp, [], Opt.Fit);
-    save(Opt.Save.FitPath, 'Sys', 'yfit', 'Sys0', 'Vary0');
+%% Multi-step fitting
+if Opt.Run.InitialFit || ~isfile(strjoin({Opt.Save.FitPath, 'mat'}, '.'))
+    [SysFit1, yfit] = esfit(@pepper,y,SysInit,{Vary0,[]},Exp,[],Opt.Fit);
 else
-    load(Opt.Save.FitPath);
+    load(Opt.SFitPath);
+end
+
+if Opt.Run.InitialFit || ~isfile(strjoin({Opt.Save.FitPath, 'mat'}, '.'))
+    [SysFit2, yfit] = esfit(@pepper,y,SysFit1,{[],Vary1},Exp,[],Opt.Fit);
+else
+    load(Opt.SFitPath);
+end
+
+if Opt.Run.InitialFit || ~isfile(strjoin({Opt.Save.FitPath, 'mat'}, '.'))
+    [Sys, yfit] = esfit(@pepper, y, SysFit2, VaryInit, Exp, [], Opt.Fit);
+    save(Opt.SFitPath,'x','yfit','Sys','SysInit','VaryInit','Exp');
+else
+    load(Opt.SFitPath);
 end
 
 FigFit = figure();
 plot(x, y, x, yfit); xlim(Exp.Range);
 if Opt.SaveFig
-    saveas(FigFit, Opt.Save.FitPath, 'png')
+    saveas(FigFit, Opt.SFitPath, 'png')
 end
 
 %% Bootstrap
-if Opt.Run.Bootstrap || ...
-        ~isfile(strjoin({Opt.Save.BootPath, 'mat'}, '.'))
+if Opt.Run.Bootstrap || ~isfile(strjoin({Opt.Save.BootPath, 'mat'}, '.'))
     r = y - yfit;
     [~, idx] = bootstrp(Opt.nBoot, [], r);
     R = r(idx);
@@ -79,8 +85,8 @@ if Opt.Run.Bootstrap || ...
     Boot = cell(1, Opt.nBoot);
     parfor i = 1:Opt.nBoot
         y_ = Y(i, :);
-        Boot{i} = esfit(@pepper, y_, {Sys0, Sys1, Sys2}, ...
-            {Vary0, Vary1, Vary2}, Exp, [], FitOpt);
+        Boot{i} = esfit(@pepper, y_, {Sys0, Sys1}, ...
+            {Vary0, Vary1}, Exp, [], FitOpt);
     end
     save(Opt.Save.BootPath, 'Boot');
 else
@@ -88,7 +94,7 @@ else
 end
 
 %% Copy all Boot Sys structure into one structure
-BootSys0 = Boot{1};
+BootSys0 = Boot{1,1}{1,1};
 fields = fieldnames(BootSys0);
 
 for i = 1:numel(fields)

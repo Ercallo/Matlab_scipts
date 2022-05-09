@@ -4,12 +4,12 @@ addpath(genpath('D:\Profile\qse\matlab_util'));
 
 % File and Run options
 Opt.Load.Folder = 'D:\Profile\qse\BDPA\220414\data_analysis';
-Opt.Load.Files = dir(strjoin({Opt.Load.Folder, 'BDPA*.mat'}, '\'));
+Opt.Load.Files = dir([Opt.Load.Folder, '\', 'BDPA*.mat'}, '\'));
 Opt.Save.Name = 'BDPA_saturation_curve';
 
 Opt.Save.Folder = Opt.Load.Folder;
 
-Opt.Run.SaveFig = true;
+Opt.Run.SaveFig = false;
 
 % Import
 cw = load(strjoin({Opt.Load.Folder, Opt.Load.Files(1).name}, '\'));
@@ -54,3 +54,7 @@ if Opt.Run.SaveFig
     Opt.Save.FigPath = strjoin({Opt.Save.Folder, Opt.Save.FigName}, '\');
     exportgraphics(gcf, Opt.Save.FigPath, 'ContentType', 'vector');
 end
+
+%%
+satCurve = struct('lw', lw, 'ppAmp', ppAmp);
+save([Opt.Save.Folder, '\satCurve.mat'], '-struct', 'satCurve', 'lw', 'ppAmp')

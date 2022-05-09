@@ -4,8 +4,7 @@ addpath(genpath('D:\Profile\qse\matlab_util'));
 
 % File and Run options
 Opt.Name = 'cw20K';
-Opt.Load.Folder = ...
-    'D:\Profile\qse\NREL\2021_summer\CWEDMR\2ordBl';
+Opt.Load.Folder = 'D:\Profile\qse\NREL\2021_summer\CWEDMR\2ordBl';
 Opt.Load.Name = strjoin({Opt.Name, 'BlcPc.mat'}, '_');
 Opt.Load.Path = strjoin({Opt.Load.Folder, ...
     Opt.Load.Name}, '\');

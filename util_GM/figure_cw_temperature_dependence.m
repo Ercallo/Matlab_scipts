@@ -2,38 +2,85 @@
 clearvars, clear, clc, close all
 addpath(genpath('D:\Profile\qse\matlab_util'));
 
+c_gray = '#b2beb5'; c_or = '#D95319'; c_gre = '#77AC30'; c_lbl = '#4DBEEE';
+c_comp = {c_or, c_gre, c_lbl};
+
 % File and Run options
 Opt.Load.Folder = 'D:\Profile\qse\NREL\2021_summer\cwEDMR\data_analysis';
-Opt.Load.Files = dir(strjoin({Opt.Load.Folder, '*.mat'}, '\'));
-Opt.Save.Name = '2021_summer_T_dependence';
+Opt.Load.Files = dir([Opt.Load.Folder, '\', '*Pc.mat']);
+Opt.Load.Files(7) = []; % Exclude 40K;
+Opt.Save.Name = '2021_summer_cw_T';
+
+Opt.Load.FolderFit = [Opt.Load.Folder, '\', 'fit_boot'];
+Opt.Load.FilesFit = dir([Opt.Load.FolderFit, '\', '*.mat']);
 
 Opt.Save.Folder = Opt.Load.Folder;
 
 Opt.Run.SaveFig = true;
 
 % Import
-cw = load(strjoin({Opt.Load.Folder, Opt.Load.Files(1).name}, '\'));
+cw = load([Opt.Load.Folder, '\', Opt.Load.Files(1).name]);
 cw = repmat(cw, numel(Opt.Load.Files),1);
+fit = load([Opt.Load.FolderFit, '\', Opt.Load.FilesFit(1).name]);
+fit = repmat(fit, numel(Opt.Load.FilesFit),1);
 for i = 1:numel(Opt.Load.Files)
-    Path = strjoin({Opt.Load.Folder, Opt.Load.Files(i).name}, '\');
-    cw(i) = load(Path);
+    cw(i) = load([Opt.Load.Folder, '\', Opt.Load.Files(i).name]);
+    fit(i) = load([Opt.Load.FolderFit, '\', Opt.Load.FilesFit(i).name]);
 end
 for i = 1:numel(Opt.Load.Files)
     cw(i).Name = Opt.Load.Files(i).name;
+    fit(i).Name = Opt.Load.FilesFit(i).name;
 end
 
 % Set common range
 Opt.Exp.Range = setExpRange(cw);
 
+%%
+pep = repmat({cw(1).y}, numel(Opt.Load.Files), 3);
+sumPep = repmat({cw(1).y}, numel(Opt.Load.Files), 1);
+propFactor = ones(1, numel(Opt.Load.Files));
+for i = 1:4
+    for j = 1:3
+        pep(i, j) = {pepper(fit(i).Sys{1, j}, fit(i).Exp)};
+    end
+    [sumPep{i}, propFactor(i)] = scaleY(pep{i,1}+pep{i,2}+pep{i,3},cw(i).y);
+    for j = 1:3
+        pep{i, j} = propFactor(i)*pep{i, j};
+    end
+end
+for i = 5:6
+    for j = 1:2
+        pep(i, j) = {pepper(fit(i).Sys{1, j}, fit(i).Exp)};
+    end
+    [sumPep{i}, propFactor(i)] = scaleY(pep{i,1} + pep{i,2}, cw(i).y);
+    for j = 1:2
+        pep{i, j} = propFactor(i)*pep{i, j};
+    end
+end
+
 %% T dependence figure
-figure('WindowStyle', 'normal', 'Position', [50 50 900 600]);
+figure('WindowStyle', 'normal', 'Position', [50 50 50+690 50+690*3/4]);
 t = tiledlayout(3, 2, 'TileSpacing', 'compact', 'Padding', 'compact');
 xTicks = 340:5:356;
 xMinorTicks = xTicks + 2.5;
 for i = 1:6
-    x = cw(i).x; y = cw(i).y;
-    nexttile, plot(x, y, 'k');
-    xlim(Opt.Exp.Range); ylim(setYLim(y, 0.1));
+    x = cw(i).x; y = cw(i).y; yfit = fit(i).yfit;
+    nexttile, plot(x, y - yfit, 'Color', c_gray);
+    hold on;
+    xlim(Opt.Exp.Range);
+    yLim = setYLim(y, 0.1); yfitLim = setYLim(yfit, 0.1);
+    ylim([min(yLim(1), yfitLim(1)) max(yLim(2), yfitLim(2))]);
+    if i < 5
+        for j = 1:3
+           plot(x, pep{i, j}, '--', 'Color', c_comp{j})
+        end
+    else
+        for j = 1:2
+           plot(x, pep{i, j}, '--', 'Color', c_comp{j})
+        end
+    end
+    plot(x, y, 'k')
+    plot(x, yfit, '--r');
     % xticks(xTicks); yticks(0);
     % set(gca,'XMinorTick','on')
     ax = gca;
@@ -62,7 +109,8 @@ if Opt.Run.SaveFig
     % Opt.Save.FigName = strjoin({Opt.Save.Name, 'f0_no40_nobox.pdf'}, '_');
     Opt.Save.FigName = strjoin({Opt.Save.Name, '.pdf'}, '');
     Opt.Save.FigPath = strjoin({Opt.Save.Folder, Opt.Save.FigName}, '\');
-    exportgraphics(t, Opt.Save.FigPath, 'ContentType', 'vector')
+    % exportgraphics(t, Opt.Save.FigPath, 'ContentType', 'vector')
+    % exportgraphics(t, 'D:\Profile\qse\master_thesis\images\2021_summer_cw_T.pdf', 'ContentType', 'vector')
 end
 
 %%
@@ -108,4 +156,17 @@ function Range = setExpRange(cw)
         end
     end
     Range = [xMin xMax];
+end
+
+function varargout = scaleY(y, ref)
+% Scale y to the same amplitude pp as ref
+    ppAmpRef = max(ref) - min(ref);
+    ppAmpY = max(y) - min(y);
+    propFactor = ppAmpRef/ppAmpY;
+    scaledY = propFactor*y;
+    if nargout == 1
+        varargout = scaledY;
+    else
+        varargout{1} = scaledY; varargout{2} = propFactor;
+    end
 end

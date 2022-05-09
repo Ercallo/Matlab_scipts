@@ -1,16 +1,13 @@
 %% General script for initial correction of cwEDMR data
-clearvars, clear, clc, close all
+% clearvars, clear, clc, close all
 addpath(genpath('/home/gianluca/matlab_util'));
 
 % File and Run options
-Opt.Name = 'cw10K';
-Opt.Load.Folder = ...
-    'D:\Profile\qse\NREL\2021_summer\CWEDMR\data_analysis';
-Opt.Load.Name = strjoin({Opt.Name, 'BlcPc'}, '_');
-Opt.Load.Path = strjoin({Opt.Load.Folder, ...
-    Opt.Load.Name}, '/');
+Opt.LName = 'cw10K';
+Opt.LFolder = 'D:\Profile\qse\NREL\2021_summer\CWEDMR\data_analysis';
+Opt.LPath = [Opt.LFolder, '\', Opt.LName, '_BlcPc.mat'];
 
-Opt.Save.Folder = Opt.Load.Folder;
+Opt.SFolder = Opt.Load.Folder;
 Opt.Save.FitName = strjoin({Opt.Name, 'fit', 'one'}, '_');
 Opt.Save.FitPath = strjoin({Opt.Save.Folder, ...
     Opt.Save.FitName}, '/');

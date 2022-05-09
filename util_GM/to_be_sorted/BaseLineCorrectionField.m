@@ -1,26 +1,21 @@
 %% Fit Field domain
 
 
-function [y0, l] = BaseLineCorrectiontField(x, y0, varargin)
-
+function [y0, bl] = BaseLineCorrectionField(x, y0, varargin)
+% x = 1xN double: B axis
+% y0 = 1xN double: slice in the B-domain
 Opt = parseOptions(varargin{:});
 
 % find the baseline region
 
 width = (max(x) - min(x)) * Opt.Width;
-indices = (x <= min(x)+width) | (x >= max(x)-width);
+idx = (x <= min(x)+width) | (x >= max(x)-width);
 
-k = x(indices);
-mat1 = y0(100,indices);
-
-
-[h,Fit] = polyfit(k, mat1,Opt.Order);
+[P, S, mu] = polyfit(x(idx), y0(idx), Opt.Order);
 
 %[h,Fit] = polyfit(B0, mat(500,:)',1);
-
-l= zeros (301,1) + h(2) + h(1) * x  ;
-
-y0 =  y0(100,:)' - l;
+bl = polyval(P, x, S, mu);
+y0 =  y0 - bl;
 
 end
 
@@ -34,8 +29,8 @@ parser.StructExpand = true;
 parser.KeepUnmatched = true;
 
 % Define parameters.
-addParameter(parser, 'Order', 1);
-addParameter(parser, 'Width', 0.2);
+addParameter(parser, 'Order', 0);
+addParameter(parser, 'Width', 0.15);
 
 % Parse input.
 parse(parser, varargin{:});

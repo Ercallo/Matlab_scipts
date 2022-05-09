@@ -9,23 +9,11 @@ Opt = parseOptions(varargin{:});
 
 if isreal(y)
     % Define the baseline region
-    if isempty(Opt.Range)
-        X = x;
-        Y = y;
-    elseif isempty(Opt.Range1)
-        X = x(Opt.Range(1) : Opt.Range(2));
-        Y = y(Opt.Range(1) : Opt.Range(2));
-    else
-        % s = size(x);
-        % if s(1) > 1
-        %     X = [x(Opt.Range(1): Opt.Range(2)); x(Opt.Range1(1): Opt.Range1(2))];
-        %     Y = [y(Opt.Range(1): Opt.Range(2)); y(Opt.Range1(1): Opt.Range1(2))];
-        % else
-        X = [x(Opt.Range(1): Opt.Range(2)) x(Opt.Range1(1): Opt.Range1(2))];
-        Y = [y(Opt.Range(1): Opt.Range(2)) y(Opt.Range1(1): Opt.Range1(2))];
-    end
+    Width = (max(x) - min(x))*Opt.Width;
+    idx = (x <= min(x) + Width) | (x >= max(x) - Width);
+    
     % Polynomial fit
-    [p, ~, mu] = polyfit(X, Y, Opt.Order);
+    [p, ~, mu] = polyfit(x(idx), y(idx), Opt.Order);
     % Baseline calculation
     b = polyval(p, x, [], mu);
     % Baseline subtraction
@@ -52,8 +40,7 @@ parser.KeepUnmatched = true;
 
 % Define parameters.
 addParameter(parser, 'Order', 2);
-addParameter(parser, 'Range', []);
-addParameter(parser, 'Range1', []);
+addParameter(parser, 'Width', 0.15);
 
 % Parse input.
 parse(parser, varargin{:});
