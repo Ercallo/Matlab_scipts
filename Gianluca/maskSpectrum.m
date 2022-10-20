@@ -17,7 +17,7 @@ function [idx, x, y] = maskSpectrum(x, y, Range)
 [M, ~] = size(Range);
 idx = zeros(size(x));
 for iM = 1:M
-    idx_ = (x >= noiseRange(iM, 1)) & (x <= noiseRange(iM, 2));
+    idx_ = (x >= Range(iM, 1)) & (x <= Range(iM, 2));
     idx = idx + idx_;
 end
 idx = logical(idx);

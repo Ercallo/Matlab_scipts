@@ -6,11 +6,11 @@ function [y, phase] = correctPhase(y, varargin)
 %
 % Input:
 %   y       spectrum, complex vector of length N
-%   Mode    criterium for phase correction, string or char vector
-%       Integral    minimize the area under the imaginary part of the
-%                   spectrum
-%       Maximum     minimize the peak to peak amplitude of the imaginary
-%                   part of the spectrum
+%   Mode    criterium for phase correction, string or char vector.
+%           Minimize the the peak to peak amplituted of (Maximum) or the 
+%           area under the (Integral) imaginary part of the spectrum,
+%           Maximum (default) or Integral
+%
 % Output:
 %   y       spectrum phase corrected (real part)
 %   phase   corresponding phase
@@ -39,7 +39,7 @@ end
 function Opt = parseOptions(varargin)
 
 if nargin == 0
-    Opt.Mode = "Integral";
+    Opt.Mode = "Maximum";
 else
     % Initialize input parser object.
     parser = inputParser;
@@ -48,7 +48,7 @@ else
     
     % Define parameters.
     expectedModes = {'Integral', 'Maximum'};
-    addParameter(parser, 'Mode', 'Integral', ...
+    addParameter(parser, 'Mode', 'Maximum', ...
         @(x) any(validatestring(x,expectedModes)))
     
     % Parse input.

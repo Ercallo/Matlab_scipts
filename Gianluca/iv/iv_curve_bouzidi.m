@@ -3,11 +3,13 @@
 clearvars
 close all
 
-TEMPERATURE = 295; % K
+TEMPERATURE = 298; % 25°C in K
 V_T = 0.02585*TEMPERATURE/300; % Thermal voltage in V
 
+% n = 2.18;
+
 % Import
-LPath = 'D:\Profile\qse\projects\NREL\2022_summer_BCzSi\ivcurve\220822_ivcurve_brokenpad.lvm';
+LPath = 'd:\Profile\qse\Desktop\To-do\IV curve chip\IV curve chip\01_IV_curve_chip_spento.txt';
 dummyStr = strsplit(LPath, '.');
 SPath = [dummyStr{1}, '.mat'];
 clear dummyStr
@@ -19,22 +21,23 @@ if endsWith(LPath, '.lvm')
     I = ivdata.data(:,3);
 elseif endsWith(LPath, '.txt')
     % Dataset recorded at SuSi building 12.8
-    ivdata = importdata(LPath, '\t', 21);
+    ivdata = importdata(LPath, '\t', 1);
     V = ivdata.data(:,1);
-    I = ivdata.data(:,2);
+    I = ivdata.data(:,2)*1e-3;
 end
 
 [V, I] = checksigns(V, I);
 
+I = I + 1e-3;
 % Plot
 figure()
-plot(V, I)
+plot(V, I, 'o')
 xlim([min(V) max(V)])
 grid()
 
 %% Linear fit on reverse bias region
 % Define region
-VRange = [-1 -0.2];
+VRange = [-1 0.4];
 idx = (V > VRange(1)) & (V < VRange(2));
 V_ = V(idx);
 I_ = I(idx);
@@ -63,7 +66,7 @@ Iv.fitRev = struct('V', V_, ...
 % Plot
 xDummy = min(V_):0.01:max(V_);
 figure()
-plot(V_, I_, xDummy, linModel([-Ga, Ipa], xDummy))
+plot(V_, I_, 'o'); hold on; plot(xDummy, linModel([-Ga, Ipa], xDummy))
 xlim([min(V_) max(V_)])
 legend('data', 'fit')
 
@@ -71,7 +74,7 @@ legend('data', 'fit')
 Ic = I + Ga*V; % Corrected current
 
 % Define region
-VRange = [0.5 1];
+VRange = [0.5 1.5];
 idx = (V > VRange(1)) & (V < VRange(2));
 V_ = V(idx);
 I_ = I(idx);
@@ -107,6 +110,8 @@ Rs = -fitForw.pfit(2)*scale;
 dRs = fitForw.pstd(2)*scale;
 n = fitForw.pfit(3)*scale/V_T;
 dn = fitForw.pstd(3)*scale/V_T;
+% V_T = fitForw.pfit(3)*scale/n;
+% dV_T = fitForw.pstd(3)*scale/n;
 I0 = Ipa*exp(-fitForw.pfit(1)/fitForw.pfit(3)); % scale gets simplificated here
 dI0 = I0*sqrt( (1/Ipa*dIpa)^2 ...
     + (1/fitForw.pfit(2)*fitForw.pstd(1)*scale)^2 ...

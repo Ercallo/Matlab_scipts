@@ -1,6 +1,6 @@
 %% General script for initial correction of cwEDMR data
 clearvars, clear, clc, close all
-addpath(genpath('d:\Profile\qse\Desktop\To-do\New Matlab folder'));
+addpath(genpath('D:\Profile\qse\Files\soft\software\Matlab'));
 
 % File and Run options
 % Opt.Load.Name0 = '013_1p0V_10KHz_3G_25K_10Scan_0Deg_Light.DTA';

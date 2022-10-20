@@ -1,3 +1,0 @@
-clearvars
-[data,x,ch1,ch2,ch3,ch4,p] = ...
-    eprocLoadRaw('d:\Profile\qse\Desktop\14_rawdata.dat');
