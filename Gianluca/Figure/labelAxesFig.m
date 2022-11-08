@@ -12,12 +12,19 @@ nc = GridSize(2);
 for ir = 1:nr
     iTile = (ir - 1)*nc + 1;
     ax = nexttile(iTile);
+    if contains(yLab, '$')
+        ax.YLabel.Interpreter = 'latex';
+    end
     ax.YLabel.String = yLab;
+
 end
 for ic = 1:nc
     iTile = (nr - 1)*nc + ic;
     ax = nexttile(iTile);
     ax.XLabel.String = xLab;
+    if contains(xLab, '$')
+        ax.XLabel.Interpreter = 'latex';
+    end
 end
 if nr*nc > 1
     ax.FontSize = TILEDLAYOUT_LABEL_FONT - 1;
